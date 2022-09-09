@@ -197,7 +197,7 @@ class RootIndex {
 
           info.excludedFromModule.put(excludeRoot, module);
         }
-        VirtualFile contentRoot = myRootSupplier.getContentRoot(contentEntry);
+        VirtualFile contentRoot = myRootSupplier.getContentRoot(contentEntry);//todo[lene] here!
         if (contentRoot != null && ensureValid(contentRoot, module)) {
           if (!info.contentRootOf.containsKey(contentRoot)) {
             info.contentRootOf.put(contentRoot, module);
@@ -1017,17 +1017,10 @@ class RootIndex {
       for (Object library : producers) {
         if (librariesToIgnore.contains(library)) continue;
         if (library instanceof SyntheticLibrary) {
-          Condition<VirtualFile> exclusion = ((SyntheticLibrary)library).getExcludeFileCondition();
+          Condition<VirtualFile> exclusion = ((SyntheticLibrary)library).getUnitedExcludeCondition();
           if (exclusion != null) {
             exclusions.add(exclusion);
             if (exclusion.value(root)) {
-              continue;
-            }
-          }
-          Condition<VirtualFile> constantCondition = ((SyntheticLibrary)library).getConstantExcludeConditionAsCondition();
-          if (constantCondition != null) {
-            exclusions.add(constantCondition);
-            if (constantCondition.value(root)) {
               continue;
             }
           }
