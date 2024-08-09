@@ -19,13 +19,13 @@ import com.intellij.util.ui.JBUI
 import com.intellij.xdebugger.XDebuggerBundle
 import icons.PlatformDebuggerImplIcons
 import kotlinx.coroutines.*
-import java.awt.FlowLayout
+import java.awt.BorderLayout
 import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JPanel
 
 private val hotSwapIcon: Icon by lazy {
-  HotSwapUiExtension.computeSafeIfAvailable { it.hotSwapIcon } ?: PlatformDebuggerImplIcons.Actions.Hot_swap
+  HotSwapUiExtension.computeSafeIfAvailable { it.hotSwapIcon } ?: PlatformDebuggerImplIcons.Actions.DebuggerSync
 }
 
 private fun createHelpTooltip(): HelpTooltip =
@@ -84,7 +84,7 @@ private class HotSwapWithRebuildAction : AnAction(), CustomComponentAction {
 }
 
 private class HotSwapToolbarComponent(action: AnAction, presentation: Presentation, place: String)
-  : JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(4), 0)) {
+  : JPanel(BorderLayout(JBUI.scale(4), 0)) {
 
   private val tooltip = createHelpTooltip()
     .setShortcut(ActionManager.getInstance().getKeyboardShortcut("XDebugger.Hotswap.Modified.Files"))
@@ -94,8 +94,8 @@ private class HotSwapToolbarComponent(action: AnAction, presentation: Presentati
 
   init {
     isOpaque = false
-    add(JBLabel(XDebuggerBundle.message("xdebugger.hotswap.code.changed")))
-    add(button)
+    add(JBLabel(XDebuggerBundle.message("xdebugger.hotswap.code.changed")), BorderLayout.WEST)
+    add(button, BorderLayout.CENTER)
     tooltip.installOn(this)
   }
 
@@ -122,14 +122,17 @@ internal class HotSwapFloatingToolbarProvider : FloatingToolbarProvider {
     val project = dataContext.getData(CommonDataKeys.PROJECT) ?: return
     val instance = HotSwapSessionManager.getInstance(project)
 
-    instance.addListener(ChangesListener(component), parentDisposable)
+    instance.addListener(ChangesListener(component, project), parentDisposable)
   }
 
-  private inner class ChangesListener(private val component: FloatingToolbarComponent) : HotSwapChangesListener {
+  private inner class ChangesListener(private val component: FloatingToolbarComponent, private val project: Project) : HotSwapChangesListener {
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun onStatusChanged(session: HotSwapSession<*>, status: HotSwapVisibleStatus) {
+    override fun onStatusChanged() {
+      val manager = HotSwapSessionManager.getInstance(project)
       // We need to hide the button even if the coroutineScope is cancelled
-      session.coroutineScope.launch(Dispatchers.EDT, start = CoroutineStart.ATOMIC) {
+      manager.coroutineScope.launch(Dispatchers.EDT, start = CoroutineStart.ATOMIC) {
+        val session = manager.currentSession
+        val status = session?.currentStatus
         if (status == HotSwapVisibleStatus.IN_PROGRESS) {
           hotSwapAction.inProgress = true
           hotSwapAction.session = null
@@ -140,6 +143,7 @@ internal class HotSwapFloatingToolbarProvider : FloatingToolbarProvider {
           HotSwapVisibleStatus.NO_CHANGES -> HotSwapButtonAction.HIDE
           HotSwapVisibleStatus.CHANGES_READY -> HotSwapButtonAction.SHOW
           HotSwapVisibleStatus.SESSION_COMPLETED -> HotSwapButtonAction.HIDE_NOW
+          null -> HotSwapButtonAction.HIDE_NOW
           else -> error("Unexpected status $status")
         }
         if (action == HotSwapButtonAction.SHOW) {

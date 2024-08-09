@@ -16,11 +16,15 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
+import com.intellij.util.io.createDirectories
+import com.intellij.util.io.delete
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.TestOnly
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.io.path.deleteRecursively
+import kotlin.io.path.exists
 
 @TestOnly
 fun tempPathFixture(root: Path? = null): TestFixture<Path> = testFixture {
@@ -29,12 +33,15 @@ fun tempPathFixture(root: Path? = null): TestFixture<Path> = testFixture {
       Files.createTempDirectory("IJ")
     }
     else {
+      if (!root.exists()) {
+        root.createDirectories()
+      }
       Files.createTempDirectory(root, "IJ")
     }
   }
   initialized(tempDir) {
     withContext(Dispatchers.IO) {
-      Files.deleteIfExists(tempDir)
+      tempDir.delete(recursively = true)
     }
   }
 }
