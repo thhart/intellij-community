@@ -766,6 +766,7 @@
           <action id="HideActiveWindow" class="com.intellij.ide.actions.HideToolWindowAction"/>
           <action id="HideSideWindows" class="com.intellij.ide.actions.HideSideWindowsAction"/>
           <action id="HideAllWindows" class="com.intellij.ide.actions.HideAllToolWindowsAction"/>
+          <action id="MoveToolWindowTabToEditorAction" class="com.intellij.openapi.wm.impl.MoveToolWindowTabToEditorAction"/>
           <action id="PinToolwindowTab" class="com.intellij.ui.content.tabs.PinToolwindowTabAction" use-shortcut-of="PinActiveTab"/>
           <action id="CloseActiveTab" class="com.intellij.ide.actions.CloseActiveTabAction"/>
           <action id="JumpToLastWindow" class="com.intellij.ide.actions.JumpToLastWindowAction"/>
@@ -1266,7 +1267,6 @@
         <action id="DropAnOutOfMemoryError" internal="true" class="com.intellij.diagnostic.DropAnOutOfMemoryErrorAction"
                 text="Drop an OutOfMemoryError" description="Hold down SHIFT for OOME in Metaspace"/>
       </group>
-      <action id="SimulateFreeze" internal="true" class="com.intellij.diagnostic.SimulateFreeze" text="Simulate a Freeze"/>
       <separator/>
       <action internal="true" id="ReloadProjectAction" class="com.intellij.internal.ReloadProjectAction"/>
       <group id="Internal.Trust" popup="true">
