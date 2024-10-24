@@ -336,7 +336,7 @@ public final class ChangeListManagerImpl extends ChangeListManagerEx implements 
 
   private void startUpdater() {
     myUpdater.initialized();
-    BackgroundTaskUtil.syncPublisher(project, LISTS_LOADED).processLoadedLists(getChangeLists());
+    project.getMessageBus().syncPublisher(LISTS_LOADED).processLoadedLists(getChangeLists());
 
     MessageBusConnection connection = project.getMessageBus().connect(this);
     connection.subscribe(VCS_CONFIGURATION_CHANGED, () -> VcsDirtyScopeManager.getInstance(project).markEverythingDirty());
@@ -1073,7 +1073,7 @@ public final class ChangeListManagerImpl extends ChangeListManagerEx implements 
   }
 
   @Override
-  public void moveChangesTo(@NotNull LocalChangeList list, @NotNull List<@NotNull Change> changes) {
+  public void moveChangesTo(@NotNull LocalChangeList list, @NotNull List<? extends @NotNull Change> changes) {
     ApplicationManager.getApplication().runReadAction(() -> {
       synchronized (myDataLock) {
         myModifier.moveChangesTo(list.getName(), changes);
@@ -1620,7 +1620,7 @@ public final class ChangeListManagerImpl extends ChangeListManagerEx implements 
         if (vcs != null) {
           myRevisionsCache.changeRemoved(baseRevision.getPath(), vcs);
         }
-        BackgroundTaskUtil.syncPublisher(myProject, VcsAnnotationRefresher.LOCAL_CHANGES_CHANGED).dirty(baseRevision.getPath());
+        myProject.getMessageBus().syncPublisher(VcsAnnotationRefresher.LOCAL_CHANGES_CHANGED).dirty(baseRevision.getPath());
       });
     }
 
@@ -1630,7 +1630,7 @@ public final class ChangeListManagerImpl extends ChangeListManagerEx implements 
         if (vcs != null) {
           myRevisionsCache.changeUpdated(was.getPath(), vcs);
         }
-        BackgroundTaskUtil.syncPublisher(myProject, VcsAnnotationRefresher.LOCAL_CHANGES_CHANGED).dirty(become);
+        myProject.getMessageBus().syncPublisher(VcsAnnotationRefresher.LOCAL_CHANGES_CHANGED).dirty(become);
       });
     }
 

@@ -22,6 +22,7 @@ import com.jetbrains.python.psi.LanguageLevel;
 import com.jetbrains.python.psi.icons.PythonPsiApiIcons;
 import com.jetbrains.python.run.CommandLinePatcher;
 import com.jetbrains.python.sdk.*;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -97,6 +98,14 @@ public abstract class PythonSdkFlavor<D extends PyFlavorData> {
   @Deprecated
   public Collection<String> suggestHomePaths(@Nullable final Module module, @Nullable final UserDataHolder context) {
     return Collections.emptyList();
+  }
+
+  /**
+   * Flavor might cache results of {@link #suggestLocalHomePaths(Module, UserDataHolder)}
+   * This method resets them
+   */
+  @ApiStatus.Internal
+  public void resetHomePathCache() {
   }
 
 
@@ -381,6 +390,10 @@ public abstract class PythonSdkFlavor<D extends PyFlavorData> {
     return getLanguageLevelFromVersionString(getVersionString(sdkHome));
   }
 
+  /**
+   * Returns wrong language level when argument is null which isn't probably what you except.
+   * Be sure to check argument for null
+   */
   @NotNull
   public LanguageLevel getLanguageLevelFromVersionString(@Nullable String version) {
     final String prefix = getName() + " ";

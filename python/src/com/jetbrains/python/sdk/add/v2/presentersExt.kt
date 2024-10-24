@@ -7,7 +7,6 @@ import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.projectRoots.Sdk
-import com.intellij.openapi.projectRoots.impl.SdkConfigurationUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.platform.ide.progress.ModalTaskOwner
 import com.intellij.platform.ide.progress.TaskCancellation
@@ -19,7 +18,7 @@ import com.jetbrains.python.sdk.VirtualEnvReader
 import com.jetbrains.python.sdk.conda.createCondaSdkFromExistingEnv
 import com.jetbrains.python.sdk.excludeInnerVirtualEnv
 import com.jetbrains.python.sdk.flavors.conda.PyCondaCommand
-import com.jetbrains.python.sdk.suggestAssociatedSdkName
+import com.jetbrains.python.sdk.persist
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.nio.file.Path
@@ -66,15 +65,7 @@ suspend fun PythonMutableTargetAddInterpreterModel.setupVirtualenv(venvPath: Pat
     return failure(message("commandLine.directoryCantBeAccessed", venvPath))
   }
 
-  // "suggest name" calls external process and can't be called from EDT
-  val newSdk = withContext(Dispatchers.IO) {
-    val suggestedName = /*suggestedSdkName ?:*/ suggestAssociatedSdkName(homeFile.path, projectPath.toString())
-    SdkConfigurationUtil.setupSdk(existingSdks.toTypedArray(), homeFile,
-                                  PythonSdkType.getInstance(),
-                                  false, null, suggestedName)!!
-  }
-
-  addSdk(newSdk)
+  val newSdk = createSdk(homeFile, projectPath, existingSdks.toTypedArray())
 
   // todo check exclude
   ProjectManager.getInstance().openProjects
@@ -115,7 +106,7 @@ suspend fun PythonAddInterpreterModel.selectCondaEnvironment(base: Boolean): Res
   }
 
   (sdk.sdkType as PythonSdkType).setupSdkPaths(sdk)
-  addSdk(sdk)
+  sdk.persist()
   return Result.success(sdk)
 }
 

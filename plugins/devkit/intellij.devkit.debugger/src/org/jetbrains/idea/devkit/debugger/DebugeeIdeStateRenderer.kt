@@ -2,6 +2,7 @@
 package org.jetbrains.idea.devkit.debugger
 
 import com.intellij.debugger.engine.*
+import com.intellij.debugger.engine.evaluation.EvaluateException
 import com.intellij.debugger.engine.evaluation.EvaluationContext
 import com.intellij.debugger.engine.evaluation.EvaluationContextImpl
 import com.intellij.debugger.engine.jdi.StackFrameProxy
@@ -17,6 +18,7 @@ import com.intellij.xdebugger.impl.frame.XFramesView
 import com.sun.jdi.BooleanValue
 import com.sun.jdi.ClassType
 import com.sun.jdi.ObjectReference
+import org.jetbrains.idea.devkit.debugger.settings.DevKitDebuggerSettings
 import java.util.*
 
 /**
@@ -51,18 +53,29 @@ internal fun getIdeState(evaluationContext: EvaluationContext): IdeState? = try 
   }
 }
 catch (e: Exception) {
-  DebuggerUtilsImpl.logError(e)
+  if (!logIncorrectSuspendState(e)) {
+    DebuggerUtilsImpl.logError(e)
+  }
   null
 }
 
 
 internal class DebugeeIdeStateRenderer : ExtraDebugNodesProvider {
   override fun addExtraNodes(evaluationContext: EvaluationContext, children: XValueChildrenList) {
+    if (!DevKitDebuggerSettings.getInstance().showIdeState) return
     if (!Registry.`is`("devkit.debugger.show.ide.state")) return
     val ideState = getIdeState(evaluationContext) ?: return
     if (ideState.readAllowed == null && ideState.writeAllowed == null) return
 
-    val (isReadActionAllowed, isWriteActionAllowed) = (ideState.readAllowed to ideState.writeAllowed).adjustLockStatus(evaluationContext)
+    val (isReadActionAllowed, isWriteActionAllowed) = try {
+      (ideState.readAllowed to ideState.writeAllowed).adjustLockStatus(evaluationContext)
+    }
+    catch (e: EvaluateException) {
+      if (!logIncorrectSuspendState(e)) {
+        DebuggerUtilsImpl.logError(e)
+      }
+      return
+    }
 
     fun icon(isAvailable: Boolean) = if (isAvailable) "✓" else "✗"
     children.addTopValue(object : XNamedValue(DevKitDebuggerBundle.message("debugger.ide.state")) {

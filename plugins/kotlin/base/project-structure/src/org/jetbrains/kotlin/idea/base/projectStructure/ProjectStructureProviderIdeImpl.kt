@@ -37,7 +37,7 @@ import org.jetbrains.kotlin.analysis.decompiler.psi.BuiltinsVirtualFileProvider
 import org.jetbrains.kotlin.analyzer.ModuleInfo
 import org.jetbrains.kotlin.idea.base.facet.platform.platform
 import org.jetbrains.kotlin.idea.base.projectStructure.moduleInfo.*
-import org.jetbrains.kotlin.idea.base.util.Frontend10ApiUsage
+import org.jetbrains.kotlin.idea.base.util.K1ModeProjectStructureApi
 import org.jetbrains.kotlin.idea.base.util.getOutsiderFileOrigin
 import org.jetbrains.kotlin.idea.base.util.isOutsiderFile
 import org.jetbrains.kotlin.parsing.KotlinParserDefinition.Companion.STD_SCRIPT_EXT
@@ -67,15 +67,17 @@ interface ProjectStructureInsightsProvider {
 }
 
 @ApiStatus.Internal
+@K1ModeProjectStructureApi
 fun IdeaModuleInfo.toKaModule(): KaModule = ProjectStructureProviderIdeImpl.getKtModuleByModuleInfo(this)
 
 @ApiStatus.Internal
 @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
+@K1ModeProjectStructureApi
 inline fun <reified T : KaModule> IdeaModuleInfo.toKaModuleOfType(): @kotlin.internal.NoInfer T {
     return toKaModule() as T
 }
 
-@OptIn(Frontend10ApiUsage::class)
+@OptIn(K1ModeProjectStructureApi::class)
 internal class ProjectStructureProviderIdeImpl(private val project: Project) : IDEProjectStructureProvider() {
     @OptIn(KaExperimentalApi::class)
     override fun getModule(element: PsiElement, contextualModule: KaModule?): KaModule {
@@ -255,9 +257,40 @@ internal class ProjectStructureProviderIdeImpl(private val project: Project) : I
             ?: error("Cannot find library entity for ${libraryModule.libraryInfo.library.name}")
     }
 
-    override fun getOpenapiLibrary(module: KaLibraryModule): Library {
-        require(module is KtLibraryModuleByModuleInfo)
-        return module.libraryInfo.library
+    override fun getOpenapiLibrary(module: KaLibraryModule): Library? {
+        if (module is KtLibraryModuleByModuleInfo) {
+            return module.libraryInfo.library
+        }
+        return null
+    }
+
+    override fun getOpenapiSdk(module: KaLibraryModule): Sdk? {
+        if (module is KtSdkLibraryModuleByModuleInfo) {
+            return module.moduleInfo.sdk
+        }
+        return null
+    }
+
+
+    override fun getContainingKaModules(virtualFile: VirtualFile): List<KaModule> {
+        return ModuleInfoProvider.getInstance(project)
+            .collectLibraryBinariesModuleInfos(virtualFile)
+            .mapTo(mutableListOf()) { getKtModuleByModuleInfo(it) }
+    }
+
+    override fun getForcedKaModule(file: PsiFile): KaModule? {
+        return file.forcedModuleInfo?.let { getKtModuleByModuleInfo(it) }
+    }
+
+    override fun setForcedKaModule(file: PsiFile, kaModule: KaModule?) {
+        when (kaModule) {
+          null -> {
+              file.forcedModuleInfo = null
+          }
+          is KtModuleByModuleInfoBase -> {
+              file.forcedModuleInfo = kaModule.moduleInfo
+          }
+        }
     }
 
     companion object {

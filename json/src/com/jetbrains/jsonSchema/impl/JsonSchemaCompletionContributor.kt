@@ -220,7 +220,7 @@ class JsonSchemaCompletionContributor : CompletionContributor() {
             val description = valueMetadata?.get("description")
             val deprecated = valueMetadata?.get("deprecationMessage")
             val order = if (isEnumOrderSensitive) i else null
-            val handlers = customizers.mapNotNull { p -> p.createHandlerForEnumValue(schema, variant) }.toList()
+            val handlers = customizers.mapNotNull { p -> p.createHandlerForEnumValue(schema, variant, completionPsiElement) }.toList()
             addValueVariant(
               key = variant,
               description = description,
@@ -241,6 +241,11 @@ class JsonSchemaCompletionContributor : CompletionContributor() {
           for (schemaType in schema.typeVariants!!) {
             suggestByType(schema, schemaType)
           }
+        }
+      }
+      else if (psiWalker?.hasObjectArrayAmbivalence() == true) {
+        schema.itemsSchema?.let { itemsSchema ->
+          suggestValues(itemsSchema, false, completionPath)
         }
       }
     }
@@ -453,7 +458,7 @@ class JsonSchemaCompletionContributor : CompletionContributor() {
       }
 
       return createDefaultPropertyInsertHandler(completionPath, !schemaObject.enum.isNullOrEmpty(),
-                                                schemaObject.type)
+                                                schemaObject.typeVariants)
     }
 
     private fun getDocumentationOrTypeName(schemaObject: JsonSchemaObject): String? {
@@ -468,7 +473,7 @@ class JsonSchemaCompletionContributor : CompletionContributor() {
 
     private fun createDefaultPropertyInsertHandler(completionPath: SchemaPath? = null,
                                                    hasEnumValues: Boolean = false,
-                                                   valueType: JsonSchemaType? = null): InsertHandler<LookupElement> {
+                                                   valueTypes: Set<JsonSchemaType>? = null): InsertHandler<LookupElement> {
       return object : InsertHandler<LookupElement> {
         override fun handleInsert(context: InsertionContext, item: LookupElement) {
           ApplicationManager.getApplication().assertWriteAccessAllowed()
@@ -489,7 +494,9 @@ class JsonSchemaCompletionContributor : CompletionContributor() {
           while (offset < docChars.length && Character.isWhitespace(docChars[offset])) {
             offset++
           }
-          val propertyValueSeparator = psiWalker!!.getPropertyValueSeparator(valueType)
+          val propertyValueSeparator =
+            valueTypes?.firstNotNullOfOrNull { psiWalker!!.getPropertyValueSeparator(it).takeIf { it.isNotBlank() } }
+            ?: psiWalker!!.getPropertyValueSeparator(valueTypes?.singleOrNull())
           if (hasValue) {
             // fix colon for YAML and alike
             if (offset < docChars.length && !isSeparatorAtOffset(docChars, offset, propertyValueSeparator)) {

@@ -120,8 +120,8 @@ open class ActionManagerImpl protected constructor(private val coroutineScope: C
 
   init {
     val app = ApplicationManager.getApplication()
-    if (!app.isUnitTestMode && !app.isHeadlessEnvironment && !app.isCommandLine) {
-      ThreadingAssertions.assertBackgroundThread()
+    if (!app.isUnitTestMode && !app.isHeadlessEnvironment && !app.isCommandLine && app.isDispatchThread) {
+      LOG.error("Instantiating ActionManager in EDT is prohibited")
     }
 
     val idToAction = HashMap<String, AnAction>(5_000, 0.5f)
@@ -1770,7 +1770,7 @@ private fun addToMap(actionId: String,
     }
     existing != null -> {
       // we need to create ChameleonAction even if 'projectType==null', in case 'ActionStub.getProjectType() != null'
-      val chameleonAction = ChameleonAction(actionId, existing, null) { registrar.getAction(it) }
+      val chameleonAction = ChameleonAction(actionId, existing, null, actionSupplier)
       if (chameleonAction.addAction(action, projectType, actionSupplier)) {
         registrar.putAction(actionId, chameleonAction)
         return true

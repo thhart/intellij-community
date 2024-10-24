@@ -11,15 +11,16 @@ import org.jetbrains.kotlin.idea.base.analysis.builtins.hasCommonKotlinStdlib
 import org.jetbrains.kotlin.idea.base.projectStructure.*
 import org.jetbrains.kotlin.idea.base.projectStructure.moduleInfo.ModuleSourceInfo
 import org.jetbrains.kotlin.idea.base.projectStructure.moduleInfo.ModuleTestSourceInfo
-import org.jetbrains.kotlin.idea.base.util.Frontend10ApiUsage
+import org.jetbrains.kotlin.idea.base.util.K1ModeProjectStructureApi
 import org.jetbrains.kotlin.idea.base.util.fileScope
 import org.jetbrains.kotlin.idea.base.util.minus
 
+@K1ModeProjectStructureApi
 internal class IdeKotlinByModulesResolutionScopeProvider(private val project: Project) : KotlinResolutionScopeProvider {
     override fun getResolutionScope(module: KaModule): GlobalSearchScope {
         val scope = when (module) {
             is KaSourceModule -> {
-                @OptIn(Frontend10ApiUsage::class)
+                @OptIn(K1ModeProjectStructureApi::class)
                 val moduleInfo = module.moduleInfo as ModuleSourceInfo
                 val includeTests = moduleInfo is ModuleTestSourceInfo
                 val scope = excludeIgnoredModulesByKotlinProjectModel(moduleInfo, module, includeTests)

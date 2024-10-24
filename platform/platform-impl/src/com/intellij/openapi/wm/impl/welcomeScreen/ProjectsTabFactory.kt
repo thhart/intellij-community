@@ -51,12 +51,9 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.ScrollPaneConstants
 
+
 @Suppress("OVERRIDE_DEPRECATION")
 internal class ProjectsTabFactory : WelcomeTabFactory {
-  companion object {
-    const val PRIMARY_BUTTONS_NUM: Int = 3
-  }
-
   override fun createWelcomeTab(parentDisposable: Disposable): WelcomeScreenTab = ProjectsTab(parentDisposable)
 }
 
@@ -221,11 +218,11 @@ internal class ProjectsTab(private val parentDisposable: Disposable) : DefaultWe
       override fun postProcessVisibleChildren(e: AnActionEvent, visibleChildren: List<AnAction>): List<AnAction> {
         val mapped = visibleChildren.mapIndexed { index, action ->
           when {
-            index >= ProjectsTabFactory.PRIMARY_BUTTONS_NUM -> action
+            index >= getWelcomeScreenPrimaryButtonsNum() -> action
             action is ActionGroup && action is ActionsWithPanelProvider -> {
               val p = e.updateSession.presentation(action)
               val wrapper = p.getClientProperty(ActionUtil.INLINE_ACTIONS)?.first()
-                            ?: wrappers.getOrPut(action) { ActionGroupPanelWrapper.wrapGroups(action, parentDisposable) } .also {
+                            ?: wrappers.getOrPut(action) { ActionGroupPanelWrapper.wrapGroups(action, parentDisposable) }.also {
                               p.putClientProperty(ActionUtil.INLINE_ACTIONS, listOf(it))
                             }
               e.updateSession.presentation(wrapper)
@@ -256,14 +253,16 @@ internal class ProjectsTab(private val parentDisposable: Disposable) : DefaultWe
     }
     val toolbar: ActionToolbarImpl = object : ActionToolbarImpl(ActionPlaces.WELCOME_SCREEN, toolbarGroup, true) {
       override fun isSecondaryAction(action: AnAction, actionIndex: Int): Boolean {
-        return actionIndex >= ProjectsTabFactory.PRIMARY_BUTTONS_NUM
+        return actionIndex >= getWelcomeScreenPrimaryButtonsNum()
       }
 
-      override fun createToolbarButton(action: AnAction,
-                                       look: ActionButtonLook?,
-                                       place: String,
-                                       presentation: Presentation,
-                                       minimumSize: Supplier<out Dimension>): ActionButton {
+      override fun createToolbarButton(
+        action: AnAction,
+        look: ActionButtonLook?,
+        place: String,
+        presentation: Presentation,
+        minimumSize: Supplier<out Dimension>,
+      ): ActionButton {
         return super.createToolbarButton(action, look, place, presentation, minimumSize).apply {
           isFocusable = true
         }
