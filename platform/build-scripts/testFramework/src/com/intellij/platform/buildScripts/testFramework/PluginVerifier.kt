@@ -157,6 +157,7 @@ class PluginVerifier(
 
     // in 251 already.
     "com.intellij.ml.inline.completion.impl.postprocessing.enclosure.MLCompletionEnclosuresDefinition.<init>",
+    "com.intellij.fullLine.api",
 
     // https://youtrack.jetbrains.com/issue/LLM-15211/Inline-code-competion-fails-with-NoSuchMethodError-in-251
     "com.intellij.ml.llm.completion.cloud.inline.CloudInlineCompletionProvider.getSuggestionDebounced",
@@ -165,6 +166,9 @@ class PluginVerifier(
     "com.intellij.openapi.editor.DefaultLanguageHighlighterColors.AI_INLAY_BUTTON_DEFAULT",
     "com.intellij.openapi.editor.DefaultLanguageHighlighterColors.AI_INLAY_BUTTON_FOCUSED",
     "com.intellij.openapi.editor.DefaultLanguageHighlighterColors.AI_INLAY_BUTTON_HOVERED",
+    
+    // https://youtrack.jetbrains.com/issue/LLM-15466/Compatibility-issues-with-DatabaseSchemaSelectionTree.init
+    "com.intellij.ml.llm.sql.chat.context.UtilsKt.createSchemaContextPopupComponent",
 
     "com.intellij.jupyter.core.jupyter.helper.OtherKt.toJupyterCellType",
     "com.intellij.ml.inline.completion.impl.kit.SkipLocationReason",
